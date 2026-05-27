@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-const probeInterval = 60 * time.Second
+const DEFAULT_PROBE_INTERVAL = 60 * time.Second
 
 type probeResult struct {
 	TargetURL          string  `json:"target_url"`
@@ -64,7 +64,7 @@ func main() {
 		fmt.Println("Error: ", err)
 		os.Exit(1)
 	}
-	interval := probeInterval
+	interval := DEFAULT_PROBE_INTERVAL
 	if len(os.Args) == 3 {
 		interval, err = time.ParseDuration(os.Args[2])
 		if err != nil {
