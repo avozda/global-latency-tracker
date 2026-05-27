@@ -42,17 +42,6 @@ type probeTimings struct {
 	firstByte    time.Time
 }
 
-func getDurationMS(start, end time.Time) float64 {
-	if start.IsZero() || end.IsZero() {
-		return 0
-	}
-	return roundToDecimal(float64(end.Sub(start).Microseconds())/1000.0, 2)
-}
-
-func roundToDecimal(v float64, precision int) float64 {
-	return math.Round(v*math.Pow10(precision)) / math.Pow10(precision)
-}
-
 func main() {
 	if len(os.Args) < 2 || len(os.Args) > 3 {
 		fmt.Println("Usage: probe <url> [interval]")
@@ -167,6 +156,17 @@ func writeProbeResult(result probeResult) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	_ = enc.Encode(result)
+}
+
+func getDurationMS(start, end time.Time) float64 {
+	if start.IsZero() || end.IsZero() {
+		return 0
+	}
+	return roundToDecimal(float64(end.Sub(start).Microseconds())/1000.0, 2)
+}
+
+func roundToDecimal(v float64, precision int) float64 {
+	return math.Round(v*math.Pow10(precision)) / math.Pow10(precision)
 }
 
 func validateProbeURL(raw string) (*url.URL, error) {
