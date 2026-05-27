@@ -54,8 +54,8 @@ func roundToDecimal(v float64, precision int) float64 {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: probe <url>")
+	if len(os.Args) < 2 || len(os.Args) > 3 {
+		fmt.Println("Usage: probe <url> [interval]")
 		os.Exit(1)
 	}
 	rawURL := os.Args[1]
@@ -64,7 +64,15 @@ func main() {
 		fmt.Println("Error: ", err)
 		os.Exit(1)
 	}
-	ticker := time.NewTicker(probeInterval)
+	interval := probeInterval
+	if len(os.Args) == 3 {
+		interval, err = time.ParseDuration(os.Args[2])
+		if err != nil {
+			fmt.Println("Error: ", err)
+			os.Exit(1)
+		}
+	}
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for {
@@ -135,8 +143,8 @@ func probe(targetURL *url.URL) {
 	if end.IsZero() {
 		end = time.Now()
 	}
-
 	result.TTFBMS = getDurationMS(timings.start, end)
+
 	if err != nil {
 		result.TotalRoundTripMS = getDurationMS(timings.start, time.Now())
 		errStr := err.Error()
