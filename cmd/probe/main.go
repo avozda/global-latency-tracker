@@ -40,6 +40,7 @@ type probeTimings struct {
 	tlsDone      time.Time
 	wroteRequest time.Time
 	firstByte    time.Time
+	roundTrip    float64
 }
 
 func main() {
@@ -60,6 +61,10 @@ func main() {
 			fmt.Println("Error: ", err)
 			os.Exit(1)
 		}
+		if interval <= 0 {
+			fmt.Println("Error: interval must be greater than 0")
+			os.Exit(1)
+		}
 	}
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -71,9 +76,23 @@ func main() {
 }
 
 func probe(targetURL *url.URL) {
-	timings := probeTimings{start: time.Now()}
+	timings := &probeTimings{start: time.Now()}
 
-	trace := &httptrace.ClientTrace{
+	trace := newProbeTrace(timings)
+
+	req, err := newProbeRequest(targetURL, trace)
+	if err != nil {
+		writeProbeResult(buildProbeResult(targetURL, timings, nil, err))
+		return
+	}
+
+	resp, err := executeProbeRequest(req, timings)
+
+	writeProbeResult(buildProbeResult(targetURL, timings, resp, err))
+}
+
+func newProbeTrace(timings *probeTimings) *httptrace.ClientTrace {
+	return &httptrace.ClientTrace{
 		DNSStart: func(httptrace.DNSStartInfo) {
 			timings.dnsStart = time.Now()
 		},
@@ -101,55 +120,64 @@ func probe(targetURL *url.URL) {
 			timings.firstByte = time.Now()
 		},
 	}
+}
 
+func newProbeRequest(targetURL *url.URL, trace *httptrace.ClientTrace) (*http.Request, error) {
 	req, err := http.NewRequest(http.MethodGet, targetURL.String(), nil)
 	if err != nil {
-		errStr := err.Error()
-		writeProbeResult(probeResult{
-			TargetURL: targetURL.String(),
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
-			Error:     &errStr,
-		})
-		return
+		return nil, err
 	}
 	req.Close = true
 	req.Header.Set("User-Agent", "Global-Latency-Tracker-Probe/1.0 (Monitoring Tool)")
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+	return req, nil
+}
 
+func executeProbeRequest(req *http.Request, timings *probeTimings) (*http.Response, error) {
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 
-	result := probeResult{
+	totalRoundTripMS := 0.0
+	if err != nil {
+		totalRoundTripMS = getDurationMS(timings.start, time.Now())
+	} else {
+		defer resp.Body.Close()
+		_, readErr := io.Copy(io.Discard, resp.Body)
+		totalRoundTripMS = getDurationMS(timings.start, time.Now())
+		if readErr != nil {
+			err = readErr
+		}
+	}
+
+	timings.roundTrip = totalRoundTripMS
+
+	return resp, err
+}
+
+func buildProbeResult(targetURL *url.URL, timings *probeTimings, resp *http.Response, err error) probeResult {
+	var errorPtr *string
+	if err != nil {
+		errStr := err.Error()
+		errorPtr = &errStr
+	}
+
+	statusCode := 0
+	if resp != nil {
+		statusCode = resp.StatusCode
+	}
+
+	return probeResult{
 		TargetURL:          targetURL.String(),
+		StatusCode:         statusCode,
 		DNSLookupMS:        getDurationMS(timings.dnsStart, timings.dnsDone),
 		TCPConnectionMS:    getDurationMS(timings.connectStart, timings.connectDone),
 		TLSHandshakeMS:     getDurationMS(timings.tlsStart, timings.tlsDone),
 		ServerProcessingMS: getDurationMS(timings.wroteRequest, timings.firstByte),
 		Timestamp:          time.Now().UTC().Format(time.RFC3339),
+		TotalRoundTripMS:   timings.roundTrip,
+		TTFBMS:             getDurationMS(timings.start, timings.firstByte),
+		Error:              errorPtr,
 	}
-
-	end := timings.firstByte
-	if end.IsZero() {
-		end = time.Now()
-	}
-	result.TTFBMS = getDurationMS(timings.start, end)
-
-	if err != nil {
-		result.TotalRoundTripMS = getDurationMS(timings.start, time.Now())
-		errStr := err.Error()
-		result.Error = &errStr
-	} else {
-		defer resp.Body.Close()
-		_, readErr := io.Copy(io.Discard, resp.Body)
-		result.TotalRoundTripMS = getDurationMS(timings.start, time.Now())
-		result.StatusCode = resp.StatusCode
-		if readErr != nil {
-			errStr := readErr.Error()
-			result.Error = &errStr
-		}
-	}
-
-	writeProbeResult(result)
 }
 
 func writeProbeResult(result probeResult) {
