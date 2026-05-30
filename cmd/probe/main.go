@@ -13,22 +13,11 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	proberesult "github.com/avozda/global-latency-tracker/internal/probe"
 )
 
 const DEFAULT_PROBE_INTERVAL = 60 * time.Second
-
-type probeResult struct {
-	TargetURL          string  `json:"target_url"`
-	StatusCode         int     `json:"status_code"`
-	DNSLookupMS        float64 `json:"dns_lookup_ms"`
-	TCPConnectionMS    float64 `json:"tcp_connection_ms"`
-	TLSHandshakeMS     float64 `json:"tls_handshake_ms"`
-	ServerProcessingMS float64 `json:"server_processing_ms"`
-	TTFBMS             float64 `json:"ttfb_ms"`
-	TotalRoundTripMS   float64 `json:"total_roundtrip_ms"`
-	Timestamp          string  `json:"timestamp"`
-	Error              *string `json:"error"`
-}
 
 type probeTimings struct {
 	start        time.Time
@@ -154,7 +143,7 @@ func executeProbeRequest(req *http.Request, timings *probeTimings) (*http.Respon
 	return resp, err
 }
 
-func buildProbeResult(targetURL *url.URL, timings *probeTimings, resp *http.Response, err error) probeResult {
+func buildProbeResult(targetURL *url.URL, timings *probeTimings, resp *http.Response, err error) proberesult.Result {
 	var errorPtr *string
 	if err != nil {
 		errStr := err.Error()
@@ -166,21 +155,21 @@ func buildProbeResult(targetURL *url.URL, timings *probeTimings, resp *http.Resp
 		statusCode = resp.StatusCode
 	}
 
-	return probeResult{
+	return proberesult.Result{
 		TargetURL:          targetURL.String(),
 		StatusCode:         statusCode,
 		DNSLookupMS:        getDurationMS(timings.dnsStart, timings.dnsDone),
 		TCPConnectionMS:    getDurationMS(timings.connectStart, timings.connectDone),
 		TLSHandshakeMS:     getDurationMS(timings.tlsStart, timings.tlsDone),
 		ServerProcessingMS: getDurationMS(timings.wroteRequest, timings.firstByte),
-		Timestamp:          time.Now().UTC().Format(time.RFC3339),
+		MeasuredAt:         time.Now().UTC(),
 		TotalRoundTripMS:   timings.roundTrip,
 		TTFBMS:             getDurationMS(timings.start, timings.firstByte),
 		Error:              errorPtr,
 	}
 }
 
-func writeProbeResult(result probeResult) {
+func writeProbeResult(result proberesult.Result) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	_ = enc.Encode(result)
