@@ -1,0 +1,9 @@
+.git
+.github
+.env
+*.out
+*.test
+coverage.*
+deploy/postgres-data
+hub
+probe
