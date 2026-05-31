@@ -74,7 +74,7 @@ func runProbeResultsCleanup(ctx context.Context, db tools.DatabaseInterface, ret
 	cutoff := time.Now().UTC().Add(-retention)
 	deleted, err := db.DeleteProbeResultsBefore(cleanupCtx, cutoff)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return
 		}
 		log.WithError(err).Error("Failed to clean up old probe results")
