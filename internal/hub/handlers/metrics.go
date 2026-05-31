@@ -11,9 +11,17 @@ import (
 )
 
 func (a *API) PostMetrics(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MB limit
 	var result probe.Result
+
 	err := json.NewDecoder(r.Body).Decode(&result)
 	if err != nil {
+		log.Error(err)
+		api.RequestErrorHandler(w, err)
+		return
+	}
+
+	if err := result.Validate(); err != nil {
 		log.Error(err)
 		api.RequestErrorHandler(w, err)
 		return
@@ -32,5 +40,10 @@ func (a *API) PostMetrics(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(record)
+	err = json.NewEncoder(w).Encode(record)
+	if err != nil {
+		log.Error(err)
+		api.InternalErrorHandler(w)
+		return
+	}
 }
