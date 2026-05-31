@@ -40,6 +40,15 @@ func main() {
 	}
 	defer db.Close()
 
+	retention, cleanupInterval, err := retentionConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	retentionDone := startProbeResultsRetention(ctx, db, retention, cleanupInterval)
+
 	var r chi.Router = chi.NewRouter()
 	handlers.RegisterRoutes(r, db)
 
@@ -54,13 +63,11 @@ func main() {
 
 	idleClosed := make(chan struct{})
 	go func() {
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-		<-sigCh
+		<-ctx.Done()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := srv.Shutdown(ctx); err != nil {
+		if err := srv.Shutdown(shutdownCtx); err != nil {
 			log.Error(err)
 		}
 		close(idleClosed)
@@ -72,6 +79,7 @@ func main() {
 	}
 
 	<-idleClosed
+	<-retentionDone
 	log.Info("Server stopped")
 }
 
