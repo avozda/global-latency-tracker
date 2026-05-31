@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"crypto/subtle"
 	"errors"
 	"net/http"
 	"os"
@@ -23,7 +24,8 @@ func Authenticate(next http.Handler) http.Handler {
 			api.RequestErrorHandler(w, APIKeyRequiredError)
 			return
 		}
-		if api_key != r.URL.Query().Get("api_key") {
+
+		if subtle.ConstantTimeCompare([]byte(api_key), []byte(r.Header.Get("X-API-Key"))) != 1 {
 			log.Error(InvalidAPIKeyError)
 			api.RequestErrorHandler(w, InvalidAPIKeyError)
 			return
