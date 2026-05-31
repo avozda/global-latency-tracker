@@ -1,12 +1,12 @@
-app = "global-latency-tracker-probe-iad"
-primary_region = "iad"
+app = "global-latency-tracker-probe-jnb"
+primary_region = "jnb"
 
 [build]
   dockerfile = "deploy/Dockerfile.probe"
 
 [env]
   PROBE_TARGET_URL = "https://api.spacexdata.com/v4/launches"
-  PROBE_REGION = "US-East"
+  PROBE_REGION = "Africa"
   PROBE_INTERVAL = "60s"
   HUB_URL = "https://global-latency-tracker.onrender.com"
 
