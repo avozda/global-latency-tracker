@@ -82,8 +82,12 @@ WHERE id = $1`, id).Scan(
 	return result, err
 }
 
-func (p *PostgreSQL) GetProbeResults(limit int, offset int) ([]probe.Record, error) {
-	rows, err := p.db.Query(`
+func (p *PostgreSQL) GetProbeResults(limit int, offset int, targetURL string) ([]probe.Record, error) {
+	var rows *sql.Rows
+	var err error
+
+	if targetURL == "" {
+		rows, err = p.db.Query(`
 SELECT
 	id, target_url, status_code, dns_lookup_ms, tcp_connection_ms,
 	tls_handshake_ms, server_processing_ms, ttfb_ms, total_roundtrip_ms,
@@ -91,12 +95,23 @@ SELECT
 FROM probe_results
 ORDER BY measured_at DESC
 LIMIT $1 OFFSET $2`, limit, offset)
+	} else {
+		rows, err = p.db.Query(`
+SELECT
+	id, target_url, status_code, dns_lookup_ms, tcp_connection_ms,
+	tls_handshake_ms, server_processing_ms, ttfb_ms, total_roundtrip_ms,
+	measured_at, error, created_at
+FROM probe_results
+WHERE target_url = $1
+ORDER BY measured_at DESC
+LIMIT $2 OFFSET $3`, targetURL, limit, offset)
+	}
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var results []probe.Record
+	results := make([]probe.Record, 0)
 	for rows.Next() {
 		var result probe.Record
 		if err := rows.Scan(

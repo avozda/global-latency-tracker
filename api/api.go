@@ -25,4 +25,7 @@ var (
 	InternalErrorHandler = func(w http.ResponseWriter) {
 		writeError(w, "Internal server error", http.StatusInternalServerError)
 	}
+	NotFoundErrorHandler = func(w http.ResponseWriter) {
+		writeError(w, "Not found", http.StatusNotFound)
+	}
 )

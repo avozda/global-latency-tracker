@@ -1,14 +1,91 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/avozda/global-latency-tracker/api"
 	"github.com/avozda/global-latency-tracker/internal/probe"
+	"github.com/go-chi/chi"
 	log "github.com/sirupsen/logrus"
 )
+
+func (a *API) GetMetrics(w http.ResponseWriter, r *http.Request) {
+	limit := 50
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed < 1 || parsed > 100 {
+			api.RequestErrorHandler(w, errors.New("limit must be an integer between 1 and 100"))
+			return
+		}
+		limit = parsed
+	}
+
+	offset := 0
+	if raw := r.URL.Query().Get("offset"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed < 0 {
+			api.RequestErrorHandler(w, errors.New("offset must be a non-negative integer"))
+			return
+		}
+		offset = parsed
+	}
+
+	targetURL := strings.TrimSpace(r.URL.Query().Get("target_url"))
+	if targetURL != "" {
+		if err := probe.ValidateTargetURL(targetURL); err != nil {
+			api.RequestErrorHandler(w, err)
+			return
+		}
+	}
+
+	results, err := a.DB.GetProbeResults(limit, offset, targetURL)
+	if err != nil {
+		log.Error(err)
+		api.InternalErrorHandler(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(results)
+	if err != nil {
+		log.Error(err)
+		api.InternalErrorHandler(w)
+		return
+	}
+}
+
+func (a *API) GetMetric(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil || id <= 0 {
+		api.RequestErrorHandler(w, errors.New("id must be a positive integer"))
+		return
+	}
+
+	record, err := a.DB.GetProbeResult(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			api.NotFoundErrorHandler(w)
+			return
+		}
+		log.Error(err)
+		api.InternalErrorHandler(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(record)
+	if err != nil {
+		log.Error(err)
+		api.InternalErrorHandler(w)
+		return
+	}
+}
 
 func (a *API) PostMetrics(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MB limit

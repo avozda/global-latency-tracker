@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -15,9 +16,17 @@ import (
 	"time"
 
 	proberesult "github.com/avozda/global-latency-tracker/internal/probe"
+	"github.com/joho/godotenv"
 )
 
 const DEFAULT_PROBE_INTERVAL = 60 * time.Second
+
+type probeConfig struct {
+	targetURL *url.URL
+	interval  time.Duration
+	hubURL    string
+	apiKey    string
+}
 
 type probeTimings struct {
 	start        time.Time
@@ -33,51 +42,89 @@ type probeTimings struct {
 }
 
 func main() {
-	if len(os.Args) < 2 || len(os.Args) > 3 {
-		fmt.Println("Usage: probe <url> [interval]")
+	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
+		fmt.Fprintln(os.Stderr, "Error loading .env:", err)
 		os.Exit(1)
 	}
-	rawURL := os.Args[1]
-	validatedURL, err := validateProbeURL(rawURL)
+
+	cfg, err := loadProbeConfig()
 	if err != nil {
-		fmt.Println("Error: ", err)
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
-	interval := DEFAULT_PROBE_INTERVAL
-	if len(os.Args) == 3 {
-		interval, err = time.ParseDuration(os.Args[2])
-		if err != nil {
-			fmt.Println("Error: ", err)
-			os.Exit(1)
-		}
-		if interval <= 0 {
-			fmt.Println("Error: interval must be greater than 0")
-			os.Exit(1)
-		}
-	}
-	ticker := time.NewTicker(interval)
+
+	ticker := time.NewTicker(cfg.interval)
 	defer ticker.Stop()
 
 	for {
-		probe(validatedURL)
+		probe(cfg)
 		<-ticker.C
 	}
 }
 
-func probe(targetURL *url.URL) {
+func loadProbeConfig() (*probeConfig, error) {
+	rawURL := strings.TrimSpace(os.Getenv("PROBE_TARGET_URL"))
+	if rawURL == "" {
+		return nil, errors.New("PROBE_TARGET_URL is required")
+	}
+	targetURL, err := validateProbeURL(rawURL)
+	if err != nil {
+		return nil, fmt.Errorf("PROBE_TARGET_URL: %w", err)
+	}
+
+	interval := DEFAULT_PROBE_INTERVAL
+	if rawInterval := strings.TrimSpace(os.Getenv("PROBE_INTERVAL")); rawInterval != "" {
+		interval, err = time.ParseDuration(rawInterval)
+		if err != nil {
+			return nil, fmt.Errorf("PROBE_INTERVAL: %w", err)
+		}
+		if interval <= 0 {
+			return nil, errors.New("PROBE_INTERVAL must be greater than 0")
+		}
+	}
+
+	hubURL := strings.TrimSpace(os.Getenv("HUB_URL"))
+	if hubURL == "" {
+		return nil, errors.New("HUB_URL is required")
+	}
+	if err := validateHubURL(hubURL); err != nil {
+		return nil, fmt.Errorf("HUB_URL: %w", err)
+	}
+
+	apiKey := strings.TrimSpace(os.Getenv("API_KEY"))
+	if apiKey == "" {
+		return nil, errors.New("API_KEY is required")
+	}
+
+	return &probeConfig{
+		targetURL: targetURL,
+		interval:  interval,
+		hubURL:    hubURL,
+		apiKey:    apiKey,
+	}, nil
+}
+
+func probe(cfg *probeConfig) {
 	timings := &probeTimings{start: time.Now()}
 
 	trace := newProbeTrace(timings)
 
-	req, err := newProbeRequest(targetURL, trace)
+	req, err := newProbeRequest(cfg.targetURL, trace)
 	if err != nil {
-		writeProbeResult(buildProbeResult(targetURL, timings, nil, err))
+		emitProbeResult(cfg, buildProbeResult(cfg.targetURL, timings, nil, err))
 		return
 	}
 
 	resp, err := executeProbeRequest(req, timings)
 
-	writeProbeResult(buildProbeResult(targetURL, timings, resp, err))
+	emitProbeResult(cfg, buildProbeResult(cfg.targetURL, timings, resp, err))
+}
+
+func emitProbeResult(cfg *probeConfig, result proberesult.Result) {
+	writeProbeResult(result)
+	if err := postProbeResult(cfg.hubURL, cfg.apiKey, result); err != nil {
+		fmt.Fprintln(os.Stderr, "Error posting to hub:", err)
+	}
 }
 
 func newProbeTrace(timings *probeTimings) *httptrace.ClientTrace {
@@ -175,6 +222,35 @@ func writeProbeResult(result proberesult.Result) {
 	_ = enc.Encode(result)
 }
 
+func postProbeResult(hubURL, apiKey string, result proberesult.Result) error {
+	body, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+
+	endpoint := strings.TrimRight(hubURL, "/") + "/api/metrics"
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", apiKey)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, resp.Body)
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("hub returned status %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
 func getDurationMS(start, end time.Time) float64 {
 	if start.IsZero() || end.IsZero() {
 		return 0
@@ -204,4 +280,20 @@ func validateProbeURL(raw string) (*url.URL, error) {
 		return nil, errors.New("url missing host")
 	}
 	return u, nil
+}
+
+func validateHubURL(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return errors.New("invalid url")
+	}
+	switch strings.ToLower(u.Scheme) {
+	case "http", "https":
+	default:
+		return errors.New("unsupported scheme")
+	}
+	if u.Host == "" {
+		return errors.New("url missing host")
+	}
+	return nil
 }
