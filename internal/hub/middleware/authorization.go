@@ -23,7 +23,8 @@ func Authenticate(next http.Handler) http.Handler {
 			api.RequestErrorHandler(w, APIKeyRequiredError)
 			return
 		}
-		if api_key != r.URL.Query().Get("api_key") {
+
+		if api_key != r.Header.Get("X-API-Key") {
 			log.Error(InvalidAPIKeyError)
 			api.RequestErrorHandler(w, InvalidAPIKeyError)
 			return

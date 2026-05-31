@@ -3,7 +3,6 @@ package tools
 import (
 	"context"
 	"database/sql"
-	"os"
 	"time"
 
 	"github.com/avozda/global-latency-tracker/internal/probe"
@@ -15,23 +14,26 @@ type PostgreSQL struct {
 	db *sql.DB
 }
 
-func (p *PostgreSQL) ConnectDatabase() error {
-	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+func OpenPostgreSQL(dsn string) (*PostgreSQL, error) {
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxIdleTime(5 * time.Minute)
+	db.SetConnMaxLifetime(30 * time.Minute)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err = db.PingContext(ctx)
-	if err != nil {
+	if err := db.PingContext(ctx); err != nil {
 		db.Close()
-		return err
+		return nil, err
 	}
 
-	p.db = db
-	return nil
+	return &PostgreSQL{db: db}, nil
 }
 
 func (p *PostgreSQL) Close() error {
