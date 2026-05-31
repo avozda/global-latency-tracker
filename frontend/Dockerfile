@@ -19,4 +19,8 @@ COPY ./package.json bun.lock /app/
 COPY --from=production-dependencies-env /app/node_modules /app/node_modules
 COPY --from=build-env /app/build /app/build
 WORKDIR /app
+
+ENV PORT=3000
+EXPOSE 3000
+
 CMD ["bun", "run", "start"]

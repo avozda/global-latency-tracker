@@ -43,6 +43,10 @@ func (p *PostgreSQL) Close() error {
 	return p.db.Close()
 }
 
+func (p *PostgreSQL) Ping(ctx context.Context) error {
+	return p.db.PingContext(ctx)
+}
+
 func (p *PostgreSQL) InsertProbeResult(result probe.Result) (probe.Record, error) {
 	var record probe.Record
 	err := p.db.QueryRow(`

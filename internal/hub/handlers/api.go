@@ -16,6 +16,8 @@ func RegisterRoutes(r chi.Router, db tools.DatabaseInterface) {
 
 	r.Use(chimiddle.StripSlashes)
 
+	r.Get("/healthz", api.Healthz)
+
 	r.Route("/api", func(r chi.Router) {
 		r.Use(middleware.Authenticate)
 		r.Get("/metrics", api.GetMetrics)
