@@ -1,3 +1,4 @@
+-- +goose Up
 CREATE TABLE probe_results (
     id BIGSERIAL PRIMARY KEY,
     target_url TEXT NOT NULL,
@@ -15,3 +16,6 @@ CREATE TABLE probe_results (
 
 CREATE INDEX idx_probe_results_target_url_measured_at
     ON probe_results (target_url, measured_at DESC);
+
+-- +goose Down
+DROP TABLE IF EXISTS probe_results;

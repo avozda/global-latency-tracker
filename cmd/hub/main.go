@@ -9,11 +9,16 @@ import (
 	"github.com/avozda/global-latency-tracker/internal/hub/tools"
 
 	"github.com/go-chi/chi"
+	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
 
 func main() {
 	log.SetReportCaller(true)
+
+	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
+		log.Fatal(err)
+	}
 
 	db, err := tools.OpenDatabase(os.Getenv("DATABASE_URL"))
 	if err != nil {
