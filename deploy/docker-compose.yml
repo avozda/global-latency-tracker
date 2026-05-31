@@ -56,6 +56,7 @@ services:
     restart: unless-stopped
     environment:
       PROBE_TARGET_URL: ${PROBE_TARGET_URL:-https://example.com}
+      PROBE_REGION: ${PROBE_REGION:-us-east-1}
       PROBE_INTERVAL: ${PROBE_INTERVAL:-60s}
       HUB_URL: ${HUB_URL:-http://hub:8080}
       API_KEY: ${API_KEY:-change-me}

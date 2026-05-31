@@ -10,6 +10,7 @@ import (
 
 type Result struct {
 	TargetURL          string    `json:"target_url"`
+	Region             string    `json:"region"`
 	StatusCode         int       `json:"status_code"`
 	DNSLookupMS        float64   `json:"dns_lookup_ms"`
 	TCPConnectionMS    float64   `json:"tcp_connection_ms"`
@@ -24,6 +25,7 @@ type Result struct {
 type Record struct {
 	ID                 int64     `json:"id"`
 	TargetURL          string    `json:"target_url"`
+	Region             string    `json:"region"`
 	StatusCode         int       `json:"status_code"`
 	DNSLookupMS        float64   `json:"dns_lookup_ms"`
 	TCPConnectionMS    float64   `json:"tcp_connection_ms"`
@@ -60,6 +62,10 @@ func ValidateTargetURL(targetURL string) error {
 func (r Result) Validate() error {
 	if err := ValidateTargetURL(r.TargetURL); err != nil {
 		return err
+	}
+
+	if strings.TrimSpace(r.Region) == "" {
+		return errors.New("region is required")
 	}
 
 	if r.MeasuredAt.IsZero() {

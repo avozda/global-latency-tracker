@@ -23,6 +23,7 @@ const DEFAULT_PROBE_INTERVAL = 60 * time.Second
 
 type probeConfig struct {
 	targetURL *url.URL
+	region    string
 	interval  time.Duration
 	hubURL    string
 	apiKey    string
@@ -72,6 +73,11 @@ func loadProbeConfig() (*probeConfig, error) {
 		return nil, fmt.Errorf("PROBE_TARGET_URL: %w", err)
 	}
 
+	region := strings.TrimSpace(os.Getenv("PROBE_REGION"))
+	if region == "" {
+		return nil, errors.New("PROBE_REGION is required")
+	}
+
 	interval := DEFAULT_PROBE_INTERVAL
 	if rawInterval := strings.TrimSpace(os.Getenv("PROBE_INTERVAL")); rawInterval != "" {
 		interval, err = time.ParseDuration(rawInterval)
@@ -98,6 +104,7 @@ func loadProbeConfig() (*probeConfig, error) {
 
 	return &probeConfig{
 		targetURL: targetURL,
+		region:    region,
 		interval:  interval,
 		hubURL:    hubURL,
 		apiKey:    apiKey,
@@ -111,13 +118,13 @@ func probe(cfg *probeConfig) {
 
 	req, err := newProbeRequest(cfg.targetURL, trace)
 	if err != nil {
-		emitProbeResult(cfg, buildProbeResult(cfg.targetURL, timings, nil, err))
+		emitProbeResult(cfg, buildProbeResult(cfg.targetURL, cfg.region, timings, nil, err))
 		return
 	}
 
 	resp, err := executeProbeRequest(req, timings)
 
-	emitProbeResult(cfg, buildProbeResult(cfg.targetURL, timings, resp, err))
+	emitProbeResult(cfg, buildProbeResult(cfg.targetURL, cfg.region, timings, resp, err))
 }
 
 func emitProbeResult(cfg *probeConfig, result proberesult.Result) {
@@ -190,7 +197,7 @@ func executeProbeRequest(req *http.Request, timings *probeTimings) (*http.Respon
 	return resp, err
 }
 
-func buildProbeResult(targetURL *url.URL, timings *probeTimings, resp *http.Response, err error) proberesult.Result {
+func buildProbeResult(targetURL *url.URL, region string, timings *probeTimings, resp *http.Response, err error) proberesult.Result {
 	var errorPtr *string
 	if err != nil {
 		errStr := err.Error()
@@ -204,6 +211,7 @@ func buildProbeResult(targetURL *url.URL, timings *probeTimings, resp *http.Resp
 
 	return proberesult.Result{
 		TargetURL:          targetURL.String(),
+		Region:             region,
 		StatusCode:         statusCode,
 		DNSLookupMS:        getDurationMS(timings.dnsStart, timings.dnsDone),
 		TCPConnectionMS:    getDurationMS(timings.connectStart, timings.connectDone),
