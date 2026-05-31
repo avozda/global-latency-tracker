@@ -36,8 +36,8 @@ type Record struct {
 	CreatedAt          time.Time `json:"created_at"`
 }
 
-func (r Result) Validate() error {
-	targetURL := strings.TrimSpace(r.TargetURL)
+func ValidateTargetURL(targetURL string) error {
+	targetURL = strings.TrimSpace(targetURL)
 	if targetURL == "" {
 		return errors.New("target_url is required")
 	}
@@ -53,6 +53,13 @@ func (r Result) Validate() error {
 	}
 	if u.Host == "" {
 		return errors.New("target_url must include a host")
+	}
+	return nil
+}
+
+func (r Result) Validate() error {
+	if err := ValidateTargetURL(r.TargetURL); err != nil {
+		return err
 	}
 
 	if r.MeasuredAt.IsZero() {

@@ -4,9 +4,9 @@ services:
     container_name: global-latency-tracker-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: global_latency_tracker
-      POSTGRES_USER: global_latency_tracker
-      POSTGRES_PASSWORD: global_latency_tracker
+      POSTGRES_DB: ${POSTGRES_DB:-global_latency_tracker}
+      POSTGRES_USER: ${POSTGRES_USER:-global_latency_tracker}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-global_latency_tracker}
     ports:
       - "5432:5432"
     volumes:
@@ -15,11 +15,53 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U global_latency_tracker -d global_latency_tracker",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
         ]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  hub:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.hub
+    image: global-latency-tracker-hub:latest
+    container_name: global-latency-tracker-hub
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-global_latency_tracker}:${POSTGRES_PASSWORD:-global_latency_tracker}@postgres:5432/${POSTGRES_DB:-global_latency_tracker}?sslmode=disable
+      API_KEY: ${API_KEY:-change-me}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- --header=\"X-API-Key: $${API_KEY}\" \"http://localhost:8080/api/metrics?limit=1\" >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  probe:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.probe
+    image: global-latency-tracker-probe:latest
+    container_name: global-latency-tracker-probe
+    restart: unless-stopped
+    environment:
+      PROBE_TARGET_URL: ${PROBE_TARGET_URL:-https://example.com}
+      PROBE_INTERVAL: ${PROBE_INTERVAL:-60s}
+      HUB_URL: ${HUB_URL:-http://hub:8080}
+      API_KEY: ${API_KEY:-change-me}
+    depends_on:
+      hub:
+        condition: service_healthy
 
 volumes:
   postgres-data:

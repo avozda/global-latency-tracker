@@ -18,6 +18,8 @@ func RegisterRoutes(r chi.Router, db tools.DatabaseInterface) {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Use(middleware.Authenticate)
+		r.Get("/metrics", api.GetMetrics)
+		r.Get("/metrics/{id}", api.GetMetric)
 		r.Post("/metrics", api.PostMetrics)
 	})
 }
