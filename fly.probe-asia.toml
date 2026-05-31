@@ -1,0 +1,16 @@
+app = "global-latency-tracker-probe-sin"
+primary_region = "sin"
+
+[build]
+  dockerfile = "deploy/Dockerfile.probe"
+
+[env]
+  PROBE_TARGET_URL = "https://api.spacexdata.com/v4/launches"
+  PROBE_REGION = "Asia"
+  PROBE_INTERVAL = "60s"
+  HUB_URL = "https://global-latency-tracker.onrender.com"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
