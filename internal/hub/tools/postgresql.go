@@ -15,7 +15,7 @@ type PostgreSQL struct {
 	db *sql.DB
 }
 
-func (p *PostgreSQL) GetDatabase() error {
+func (p *PostgreSQL) ConnectDatabase() error {
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		return err

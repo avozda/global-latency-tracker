@@ -11,6 +11,6 @@ func RegisterRoutes(r chi.Router) {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Use(middleware.Authenticate)
-
+		r.Post("/metrics", PostMetrics)
 	})
 }
