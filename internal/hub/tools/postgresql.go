@@ -129,3 +129,14 @@ LIMIT $2 OFFSET $3`, targetURL, limit, offset)
 	}
 	return results, rows.Err()
 }
+
+func (p *PostgreSQL) DeleteProbeResultsBefore(ctx context.Context, cutoff time.Time) (int64, error) {
+	result, err := p.db.ExecContext(ctx, `
+DELETE FROM probe_results
+WHERE measured_at < $1`, cutoff)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.RowsAffected()
+}
