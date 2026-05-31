@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -51,10 +53,7 @@ func (a *API) GetMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(results)
-	if err != nil {
-		log.Error(err)
+	if err := writeJSON(w, http.StatusOK, results); err != nil {
 		api.InternalErrorHandler(w)
 		return
 	}
@@ -78,10 +77,7 @@ func (a *API) GetMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(record)
-	if err != nil {
-		log.Error(err)
+	if err := writeJSON(w, http.StatusOK, record); err != nil {
 		api.InternalErrorHandler(w)
 		return
 	}
@@ -115,12 +111,21 @@ func (a *API) PostMetrics(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("["+time.Now().Format(time.RFC3339)+"]"+" Probe result inserted successfully for target URL: ", result.TargetURL, " measured at ", result.MeasuredAt.Format(time.RFC3339))
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(record)
-	if err != nil {
-		log.Error(err)
+	if err := writeJSON(w, http.StatusCreated, record); err != nil {
 		api.InternalErrorHandler(w)
 		return
 	}
+}
+
+func writeJSON(w http.ResponseWriter, status int, v any) error {
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(v); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, err := io.Copy(w, &buf)
+	return err
 }

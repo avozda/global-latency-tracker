@@ -57,7 +57,7 @@ services:
     environment:
       PROBE_TARGET_URL: ${PROBE_TARGET_URL:-https://example.com}
       PROBE_INTERVAL: ${PROBE_INTERVAL:-60s}
-      HUB_URL: ${PROBE_HUB_URL:-http://hub:8080}
+      HUB_URL: ${HUB_URL:-http://hub:8080}
       API_KEY: ${API_KEY:-change-me}
     depends_on:
       hub:
