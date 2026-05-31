@@ -8,7 +8,7 @@ type DatabaseInterface interface {
 	Close() error
 	InsertProbeResult(result probe.Result) (probe.Record, error)
 	GetProbeResult(id int64) (probe.Record, error)
-	GetProbeResults(limit int, offset int) ([]probe.Record, error)
+	GetProbeResults(limit int, offset int, targetURL string) ([]probe.Record, error)
 }
 
 func OpenDatabase(dsn string) (DatabaseInterface, error) {
