@@ -1,16 +1,30 @@
-app = "global-latency-tracker-probe-ams"
-primary_region = "ams"
+# fly.toml app configuration file generated for global-latency-tracker-probe-ams on 2026-05-31T22:48:06Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'global-latency-tracker-probe-ams'
+primary_region = 'ams'
 
 [build]
-  dockerfile = "deploy/Dockerfile.probe"
+  dockerfile = 'deploy/Dockerfile.probe'
 
 [env]
-  PROBE_TARGET_URL = "https://api.spacexdata.com/v4/launches"
-  PROBE_REGION = "Europe"
-  PROBE_INTERVAL = "60s"
-  HUB_URL = "https://global-latency-tracker.onrender.com"
+  HUB_URL = 'https://global-latency-tracker.onrender.com'
+  PROBE_INTERVAL = '60s'
+  PROBE_REGION = 'Europe'
+  PROBE_TARGET_URL = 'https://api.spacexdata.com/v4/launches'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
 
 [[vm]]
-  memory = "256mb"
-  cpu_kind = "shared"
+  memory = '256mb'
+  cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 256
