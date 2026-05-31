@@ -2,6 +2,7 @@
 CREATE TABLE probe_results (
     id BIGSERIAL PRIMARY KEY,
     target_url TEXT NOT NULL,
+    region TEXT NOT NULL DEFAULT '',
     status_code INTEGER NOT NULL,
     dns_lookup_ms DOUBLE PRECISION NOT NULL,
     tcp_connection_ms DOUBLE PRECISION NOT NULL,
@@ -16,6 +17,9 @@ CREATE TABLE probe_results (
 
 CREATE INDEX idx_probe_results_target_url_measured_at
     ON probe_results (target_url, measured_at DESC);
+
+CREATE INDEX idx_probe_results_region_measured_at
+    ON probe_results (region, measured_at DESC);
 
 -- +goose Down
 DROP TABLE IF EXISTS probe_results;
