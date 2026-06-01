@@ -13,7 +13,7 @@ primary_region = 'jnb'
   HUB_URL = 'https://global-latency-tracker.onrender.com'
   PROBE_INTERVAL = '60s'
   PROBE_REGION = 'Africa'
-  PROBE_TARGET_URL = 'https://api.spacexdata.com/v4/launches'
+  PROBE_TARGET_URL = 'https://www.ethz.ch'
 
 [[vm]]
   memory = '256mb'

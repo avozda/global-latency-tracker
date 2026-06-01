@@ -8,7 +8,7 @@ primary_region = 'gru'
   HUB_URL = 'https://global-latency-tracker.onrender.com'
   PROBE_INTERVAL = '60s'
   PROBE_REGION = 'South America'
-  PROBE_TARGET_URL = 'https://api.spacexdata.com/v4/launches'
+  PROBE_TARGET_URL = 'https://www.ethz.ch'
 
 [[vm]]
   memory = '256mb'
