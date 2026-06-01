@@ -73,9 +73,9 @@ export function ProbeMap({
       <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-950/60">
         <ComposableMap
           width={800}
-          height={330}
-          projectionConfig={{ scale: 130, center: [10, 8] }}
-          className="h-64 w-full sm:h-72"
+          height={400}
+          projectionConfig={{ scale: 145, center: [10, 6] }}
+          className="h-80 w-full sm:h-[22rem]"
           aria-label="World map showing probe regions and the monitored URL target"
         >
           <Geographies geography={worldMap}>

@@ -78,7 +78,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
   return (
     <main className="min-h-screen bg-gray-950 text-gray-100">
-      <div className="mx-auto max-w-6xl px-4 py-10">
+      <div className="mx-auto max-w-7xl px-4 py-10">
         <header className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">
@@ -129,7 +129,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
                 Regions
               </h2>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {regions.map((group) => (
                   <RegionCard
                     key={group.region}
