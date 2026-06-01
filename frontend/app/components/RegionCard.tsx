@@ -127,9 +127,6 @@ export function RegionCard({
         </p>
       )}
 
-      <p className="mt-3 truncate text-xs text-gray-500" title={latest.target_url}>
-        {latest.target_url}
-      </p>
     </button>
   );
 }

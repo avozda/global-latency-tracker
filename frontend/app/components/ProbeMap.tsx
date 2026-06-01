@@ -2,6 +2,7 @@ import {
   ComposableMap,
   Geographies,
   Geography,
+  Line,
   Marker,
 } from "react-simple-maps";
 import worldMap from "world-atlas/countries-110m.json";
@@ -47,15 +48,14 @@ export function ProbeMap({
     );
 
   return (
-    <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-5">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold text-gray-100">
             Probe network
           </h2>
           <p className="text-xs text-gray-500">
-            Deployed probes measuring latency to{" "}
-            <span className="text-gray-300">{TARGET_LOCATION.label}</span>.
+            Deployed probes measuring latency to the monitored URL.
           </p>
         </div>
         <div className="flex flex-wrap gap-3 text-xs text-gray-500">
@@ -72,9 +72,11 @@ export function ProbeMap({
 
       <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-950/60">
         <ComposableMap
-          projectionConfig={{ scale: 150 }}
-          className="h-auto w-full"
-          aria-label="World map showing probe regions and the ETH Zurich target"
+          width={800}
+          height={330}
+          projectionConfig={{ scale: 130, center: [10, 8] }}
+          className="h-64 w-full sm:h-72"
+          aria-label="World map showing probe regions and the monitored URL target"
         >
           <Geographies geography={worldMap}>
             {({ geographies }) =>
@@ -94,6 +96,22 @@ export function ProbeMap({
               ))
             }
           </Geographies>
+
+          {plottedRegions.map(({ group, location }) => (
+            <Line
+              key={`${group.region}-route`}
+              from={location.coordinates}
+              to={TARGET_LOCATION.coordinates}
+              stroke={
+                group.region === selectedRegion
+                  ? "rgba(96, 165, 250, 0.7)"
+                  : "rgba(96, 165, 250, 0.3)"
+              }
+              strokeWidth={group.region === selectedRegion ? 1.4 : 0.9}
+              strokeLinecap="round"
+              fill="none"
+            />
+          ))}
 
           {plottedRegions.map(({ group, location }) => {
             const selected = group.region === selectedRegion;
@@ -144,9 +162,7 @@ export function ProbeMap({
 
           <Marker coordinates={TARGET_LOCATION.coordinates}>
             <g>
-              <title>
-                {TARGET_LOCATION.label} - {TARGET_LOCATION.city}
-              </title>
+              <title>Monitored URL - {TARGET_LOCATION.city}</title>
               <rect
                 x={-4.5}
                 y={-4.5}
@@ -156,13 +172,6 @@ export function ProbeMap({
                 className="origin-center rotate-45 fill-blue-400 stroke-blue-100"
                 strokeWidth={1.5}
               />
-              <text
-                textAnchor="middle"
-                y={-12}
-                className="pointer-events-none fill-blue-100 text-[10px] font-semibold"
-              >
-                ETH Zurich
-              </text>
             </g>
           </Marker>
         </ComposableMap>
