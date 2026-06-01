@@ -9,6 +9,7 @@ import {
 } from "../lib/api";
 import { RegionCard } from "../components/RegionCard";
 import { LatencyChart } from "../components/LatencyChart";
+import { ProbeMap } from "../components/ProbeMap";
 
 const REFRESH_INTERVAL_MS = 15_000;
 
@@ -118,6 +119,12 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           </div>
         ) : (
           <div className="flex flex-col gap-8">
+            <ProbeMap
+              regions={regions}
+              selectedRegion={selected?.region ?? null}
+              onSelectRegion={setSelectedRegion}
+            />
+
             <section>
               <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
                 Regions
