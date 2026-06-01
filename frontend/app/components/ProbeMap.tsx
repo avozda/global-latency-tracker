@@ -55,7 +55,8 @@ export function ProbeMap({
             Probe network
           </h2>
           <p className="text-xs text-gray-500">
-            Deployed probes measuring latency to the monitored URL.
+            Deployed probes measuring latency to{" "}
+            <span className="text-gray-300">{TARGET_LOCATION.url}</span>.
           </p>
         </div>
         <div className="flex flex-wrap gap-3 text-xs text-gray-500">
@@ -63,19 +64,15 @@ export function ProbeMap({
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
             Probe
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rotate-45 rounded-sm bg-blue-400" />
-            Monitored URL
-          </span>
         </div>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-950/60">
         <ComposableMap
           width={800}
-          height={430}
-          projectionConfig={{ scale: 155, center: [10, 5] }}
-          className="h-[21rem] w-full sm:h-96"
+          height={470}
+          projectionConfig={{ scale: 165, center: [10, 4] }}
+          className="h-[23rem] w-full sm:h-[26rem]"
           aria-label="World map showing probe regions and the monitored URL target"
         >
           <Geographies geography={worldMap}>
@@ -162,7 +159,9 @@ export function ProbeMap({
 
           <Marker coordinates={TARGET_LOCATION.coordinates}>
             <g>
-              <title>Monitored URL - {TARGET_LOCATION.city}</title>
+              <title>
+                {TARGET_LOCATION.url} - {TARGET_LOCATION.city}
+              </title>
               <rect
                 x={-4.5}
                 y={-4.5}

@@ -2,6 +2,7 @@ export interface GeoPoint {
   label: string;
   city: string;
   coordinates: [longitude: number, latitude: number];
+  url?: string;
 }
 
 export const PROBE_LOCATIONS: Record<string, GeoPoint> = {
@@ -36,4 +37,5 @@ export const TARGET_LOCATION: GeoPoint = {
   label: "ETH Zurich",
   city: "Zurich",
   coordinates: [8.5417, 47.3769],
+  url: "https://www.ethz.ch/de.html",
 };
