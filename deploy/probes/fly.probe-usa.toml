@@ -1,3 +1,8 @@
+# fly.toml app configuration file generated for global-latency-tracker-probe-lax on 2026-06-01T08:51:50Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
 app = 'global-latency-tracker-probe-lax'
 primary_region = 'lax'
 
