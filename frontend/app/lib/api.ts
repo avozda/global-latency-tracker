@@ -51,6 +51,23 @@ export async function fetchMetrics(limit = 100): Promise<ProbeRecord[]> {
 }
 
 /**
+ * Fetches metrics from the same-origin proxy route (`/api/metrics`). Safe to
+ * call from the browser: the proxy injects the API key server-side, so no
+ * secret reaches the client. Used by React Query for client-side polling.
+ */
+export async function fetchClientMetrics(limit = 100): Promise<ProbeRecord[]> {
+  const response = await fetch(`/api/metrics?limit=${limit}`);
+
+  if (!response.ok) {
+    throw new Error(
+      `Metrics request failed: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  return (await response.json()) as ProbeRecord[];
+}
+
+/**
  * Groups records by region. The API returns records newest-first, so for each
  * region we keep the most recent record (for the status card) and a
  * time-ascending series (for the chart). Regions are sorted alphabetically.

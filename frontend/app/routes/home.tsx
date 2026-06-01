@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useRevalidator } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 import type { Route } from "./+types/home";
-import { fetchMetrics, groupByRegion, type RegionGroup } from "../lib/api";
+import {
+  fetchClientMetrics,
+  fetchMetrics,
+  groupByRegion,
+  type RegionGroup,
+} from "../lib/api";
 import { RegionCard } from "../components/RegionCard";
 import { LatencyChart } from "../components/LatencyChart";
 
@@ -30,19 +35,25 @@ export async function loader() {
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const { regions, error } = loaderData;
-  const revalidator = useRevalidator();
+  const { error: initialError } = loaderData;
+
+  const {
+    data: regions,
+    isFetching,
+    error: queryError,
+  } = useQuery({
+    queryKey: ["metrics"],
+    queryFn: async () => groupByRegion(await fetchClientMetrics(100)),
+    initialData: loaderData.regions,
+    refetchInterval: REFRESH_INTERVAL_MS,
+  });
+
+  const error =
+    queryError instanceof Error ? queryError.message : initialError;
 
   const [selectedRegion, setSelectedRegion] = useState<string | null>(
     regions[0]?.region ?? null,
   );
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      revalidator.revalidate();
-    }, REFRESH_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [revalidator]);
 
   useEffect(() => {
     if (regions.length === 0) {
@@ -75,14 +86,14 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <span
               className={`h-2 w-2 rounded-full ${
-                revalidator.state === "idle"
-                  ? "bg-emerald-500"
-                  : "animate-pulse bg-amber-500"
+                isFetching
+                  ? "animate-pulse bg-amber-500"
+                  : "bg-emerald-500"
               }`}
             />
-            {revalidator.state === "idle"
-              ? `Auto-refreshing every ${REFRESH_INTERVAL_MS / 1000}s`
-              : "Refreshing…"}
+            {isFetching
+              ? "Refreshing…"
+              : `Auto-refreshing every ${REFRESH_INTERVAL_MS / 1000}s`}
           </div>
         </header>
 

@@ -1,0 +1,17 @@
+app = 'global-latency-tracker-probe-gru'
+primary_region = 'gru'
+
+[build]
+  dockerfile = '../Dockerfile.probe'
+
+[env]
+  HUB_URL = 'https://global-latency-tracker.onrender.com'
+  PROBE_INTERVAL = '60s'
+  PROBE_REGION = 'South America'
+  PROBE_TARGET_URL = 'https://api.spacexdata.com/v4/launches'
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256
