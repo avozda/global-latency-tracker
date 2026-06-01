@@ -5,10 +5,16 @@ package tools
 import (
 	"context"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/avozda/global-latency-tracker/internal/probe"
+)
+
+var (
+	migrateOnce sync.Once
+	migrateErr  error
 )
 
 func setupTestDB(t *testing.T) *PostgreSQL {
@@ -19,8 +25,9 @@ func setupTestDB(t *testing.T) *PostgreSQL {
 		t.Skip("TEST_DATABASE_URL not set; skipping Postgres integration tests")
 	}
 
-	if err := RunMigrations(dsn); err != nil {
-		t.Fatalf("run migrations: %v", err)
+	migrateOnce.Do(func() { migrateErr = RunMigrations(dsn) })
+	if migrateErr != nil {
+		t.Fatalf("run migrations: %v", migrateErr)
 	}
 
 	db, err := OpenPostgreSQL(dsn)

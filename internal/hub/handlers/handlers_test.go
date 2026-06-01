@@ -67,13 +67,7 @@ func newTestServer(t *testing.T, db *mockDB) *httptest.Server {
 
 func doRequest(t *testing.T, method, url string, body string) *http.Response {
 	t.Helper()
-	var reader *strings.Reader
-	if body != "" {
-		reader = strings.NewReader(body)
-	} else {
-		reader = strings.NewReader("")
-	}
-	req, err := http.NewRequest(method, url, reader)
+	req, err := http.NewRequest(method, url, strings.NewReader(body))
 	if err != nil {
 		t.Fatalf("build request: %v", err)
 	}
