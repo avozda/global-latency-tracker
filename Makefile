@@ -3,7 +3,13 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-.PHONY: migrate-up migrate-down migrate-status migrate-create
+.PHONY: test test-integration migrate-up migrate-down migrate-status migrate-create
+
+test:
+	go test ./...
+
+test-integration:
+	TEST_DATABASE_URL="$(if $(TEST_DATABASE_URL),$(TEST_DATABASE_URL),$(DATABASE_URL))" go test -tags=integration ./...
 
 migrate-up:
 	goose -dir migrations postgres "$(DATABASE_URL)" up
