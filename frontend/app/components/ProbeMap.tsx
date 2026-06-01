@@ -51,9 +51,7 @@ export function ProbeMap({
     <section className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4">
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-gray-100">
-            Probe network
-          </h2>
+          <h2 className="text-sm font-semibold text-gray-100">Probe network</h2>
           <p className="text-xs text-gray-500">
             Deployed probes measuring latency to{" "}
             <span className="text-gray-300">{TARGET_LOCATION.url}</span>.
@@ -70,7 +68,7 @@ export function ProbeMap({
       <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-950/60">
         <ComposableMap
           width={800}
-          height={470}
+          height={550}
           projectionConfig={{ scale: 165, center: [10, 4] }}
           className="h-[23rem] w-full sm:h-[26rem]"
           aria-label="World map showing probe regions and the monitored URL target"
