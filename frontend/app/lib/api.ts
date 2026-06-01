@@ -20,11 +20,6 @@ export interface RegionGroup {
   series: ProbeRecord[];
 }
 
-/**
- * Fetches the most recent probe results from the Go hub API.
- * Runs server-side only (inside a React Router loader) so the API key
- * never reaches the browser and CORS is not an issue.
- */
 export async function fetchMetrics(limit = 100): Promise<ProbeRecord[]> {
   const baseURL = process.env.API_BASE_URL;
   const apiKey = process.env.API_KEY;
@@ -50,11 +45,25 @@ export async function fetchMetrics(limit = 100): Promise<ProbeRecord[]> {
   return (await response.json()) as ProbeRecord[];
 }
 
-/**
- * Groups records by region. The API returns records newest-first, so for each
- * region we keep the most recent record (for the status card) and a
- * time-ascending series (for the chart). Regions are sorted alphabetically.
- */
+export async function fetchClientMetrics(limit = 100): Promise<ProbeRecord[]> {
+  const response = await fetch(`/api/metrics?limit=${limit}`);
+
+  if (!response.ok) {
+    let message = `Metrics request failed: ${response.status} ${response.statusText}`;
+
+    try {
+      const payload = (await response.json()) as { error?: unknown };
+      if (typeof payload.error === "string" && payload.error.length > 0) {
+        message = payload.error;
+      }
+    } catch {}
+
+    throw new Error(message);
+  }
+
+  return (await response.json()) as ProbeRecord[];
+}
+
 export function groupByRegion(records: ProbeRecord[]): RegionGroup[] {
   const byRegion = new Map<string, ProbeRecord[]>();
 

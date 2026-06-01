@@ -84,15 +84,48 @@ export function RegionCard({
       </div>
 
       <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-400">
+        <dt>DNS lookup</dt>
+        <dd className="text-right tabular-nums text-gray-200">
+          {latest.dns_lookup_ms.toFixed(1)} ms
+        </dd>
+        <dt>TCP connection</dt>
+        <dd className="text-right tabular-nums text-gray-200">
+          {latest.tcp_connection_ms.toFixed(1)} ms
+        </dd>
+        <dt>TLS handshake</dt>
+        <dd className="text-right tabular-nums text-gray-200">
+          {latest.tls_handshake_ms.toFixed(1)} ms
+        </dd>
+        <dt>Server processing</dt>
+        <dd className="text-right tabular-nums text-gray-200">
+          {latest.server_processing_ms.toFixed(1)} ms
+        </dd>
         <dt>TTFB</dt>
         <dd className="text-right tabular-nums text-gray-200">
-          {latest.ttfb_ms.toFixed(0)} ms
+          {latest.ttfb_ms.toFixed(1)} ms
+        </dd>
+        <dt>Total round-trip</dt>
+        <dd className="text-right tabular-nums text-gray-200">
+          {latest.total_roundtrip_ms.toFixed(1)} ms
+        </dd>
+        <dt>Status code</dt>
+        <dd className="text-right tabular-nums text-gray-200">
+          {latest.status_code || "—"}
         </dd>
         <dt>Updated</dt>
         <dd className="text-right tabular-nums text-gray-200">
           {formatTimestamp(latest.measured_at)}
         </dd>
       </dl>
+
+      {latest.error && (
+        <p
+          className="mt-3 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-xs text-red-300"
+          title={latest.error}
+        >
+          <span className="font-semibold">Error:</span> {latest.error}
+        </p>
+      )}
 
       <p className="mt-3 truncate text-xs text-gray-500" title={latest.target_url}>
         {latest.target_url}

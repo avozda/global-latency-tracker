@@ -7,13 +7,13 @@ app = 'global-latency-tracker-probe-sin'
 primary_region = 'sin'
 
 [build]
-  dockerfile = 'deploy/Dockerfile.probe'
+  dockerfile = '../Dockerfile.probe'
 
 [env]
   HUB_URL = 'https://global-latency-tracker.onrender.com'
   PROBE_INTERVAL = '60s'
   PROBE_REGION = 'Asia'
-  PROBE_TARGET_URL = 'https://api.spacexdata.com/v4/launches'
+  PROBE_TARGET_URL = 'https://www.ethz.ch'
 
 [[vm]]
   memory = '256mb'

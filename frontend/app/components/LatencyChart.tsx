@@ -17,9 +17,30 @@ interface LatencyChartProps {
 
 interface ChartPoint {
   time: string;
+  dns_lookup_ms: number;
+  tcp_connection_ms: number;
+  tls_handshake_ms: number;
+  server_processing_ms: number;
   ttfb_ms: number;
   total_roundtrip_ms: number;
 }
+
+const METRICS: {
+  key: keyof Omit<ChartPoint, "time">;
+  name: string;
+  color: string;
+}[] = [
+  { key: "dns_lookup_ms", name: "DNS lookup (ms)", color: "#f472b6" },
+  { key: "tcp_connection_ms", name: "TCP connection (ms)", color: "#34d399" },
+  { key: "tls_handshake_ms", name: "TLS handshake (ms)", color: "#fbbf24" },
+  {
+    key: "server_processing_ms",
+    name: "Server processing (ms)",
+    color: "#f87171",
+  },
+  { key: "ttfb_ms", name: "TTFB (ms)", color: "#38bdf8" },
+  { key: "total_roundtrip_ms", name: "Total round-trip (ms)", color: "#a78bfa" },
+];
 
 function toChartData(series: ProbeRecord[]): ChartPoint[] {
   return series.map((record) => ({
@@ -27,6 +48,10 @@ function toChartData(series: ProbeRecord[]): ChartPoint[] {
       hour: "2-digit",
       minute: "2-digit",
     }),
+    dns_lookup_ms: Number(record.dns_lookup_ms.toFixed(1)),
+    tcp_connection_ms: Number(record.tcp_connection_ms.toFixed(1)),
+    tls_handshake_ms: Number(record.tls_handshake_ms.toFixed(1)),
+    server_processing_ms: Number(record.server_processing_ms.toFixed(1)),
     ttfb_ms: Number(record.ttfb_ms.toFixed(1)),
     total_roundtrip_ms: Number(record.total_roundtrip_ms.toFixed(1)),
   }));
@@ -83,24 +108,18 @@ export function LatencyChart({ region, series }: LatencyChartProps) {
               formatter={(value) => `${value} ms`}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Line
-              type="monotone"
-              dataKey="ttfb_ms"
-              name="TTFB (ms)"
-              stroke="#38bdf8"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="total_roundtrip_ms"
-              name="Total round-trip (ms)"
-              stroke="#a78bfa"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
+            {METRICS.map((metric) => (
+              <Line
+                key={metric.key}
+                type="monotone"
+                dataKey={metric.key}
+                name={metric.name}
+                stroke={metric.color}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       )}
