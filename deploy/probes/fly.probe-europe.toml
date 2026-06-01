@@ -13,7 +13,7 @@ primary_region = 'ams'
   HUB_URL = 'https://global-latency-tracker.onrender.com'
   PROBE_INTERVAL = '60s'
   PROBE_REGION = 'Europe'
-  PROBE_TARGET_URL = 'https://www.ethz.ch'
+  PROBE_TARGET_URL = 'https://www.ethz.ch/de.html'
 
 [[vm]]
   memory = '256mb'
