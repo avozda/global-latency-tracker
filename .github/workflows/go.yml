@@ -26,3 +26,34 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+
+  integration:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: global_latency_tracker
+          POSTGRES_USER: global_latency_tracker
+          POSTGRES_PASSWORD: global_latency_tracker
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U global_latency_tracker -d global_latency_tracker"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.26'
+
+    - name: Integration test
+      env:
+        TEST_DATABASE_URL: postgres://global_latency_tracker:global_latency_tracker@localhost:5432/global_latency_tracker?sslmode=disable
+      run: go test -v -tags=integration ./...
