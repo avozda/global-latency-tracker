@@ -49,7 +49,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   });
 
   const error =
-    queryError instanceof Error ? queryError.message : initialError;
+    queryError instanceof Error
+      ? queryError.message
+      : regions.length > 0
+        ? null
+        : initialError;
 
   const [selectedRegion, setSelectedRegion] = useState<string | null>(
     regions[0]?.region ?? null,
