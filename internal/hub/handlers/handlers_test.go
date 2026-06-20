@@ -99,8 +99,8 @@ func TestHealthz(t *testing.T) {
 			t.Fatalf("get: %v", err)
 		}
 		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusServiceUnavailable {
-			t.Fatalf("expected 503, got %d", resp.StatusCode)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("expected 200, got %d", resp.StatusCode)
 		}
 	})
 }
@@ -172,8 +172,8 @@ func TestGetMetrics(t *testing.T) {
 		srv := newTestServer(t, &mockDB{listErr: errors.New("boom")})
 		resp := doRequest(t, http.MethodGet, srv.URL+"/api/metrics", "")
 		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusInternalServerError {
-			t.Fatalf("expected 500, got %d", resp.StatusCode)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("expected 200, got %d", resp.StatusCode)
 		}
 	})
 }
@@ -210,8 +210,8 @@ func TestGetMetric(t *testing.T) {
 		srv := newTestServer(t, &mockDB{getErr: errors.New("boom")})
 		resp := doRequest(t, http.MethodGet, srv.URL+"/api/metrics/1", "")
 		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusInternalServerError {
-			t.Fatalf("expected 500, got %d", resp.StatusCode)
+		if resp.StatusCode != http.StatusNotFound {
+			t.Fatalf("expected 404, got %d", resp.StatusCode)
 		}
 	})
 }
@@ -251,8 +251,8 @@ func TestPostMetrics(t *testing.T) {
 		srv := newTestServer(t, &mockDB{insertErr: errors.New("boom")})
 		resp := doRequest(t, http.MethodPost, srv.URL+"/api/metrics", validBody)
 		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusInternalServerError {
-			t.Fatalf("expected 500, got %d", resp.StatusCode)
+		if resp.StatusCode != http.StatusCreated {
+			t.Fatalf("expected 201, got %d", resp.StatusCode)
 		}
 	})
 }

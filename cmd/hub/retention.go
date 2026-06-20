@@ -68,6 +68,11 @@ func startProbeResultsRetention(ctx context.Context, db tools.DatabaseInterface,
 }
 
 func runProbeResultsCleanup(ctx context.Context, db tools.DatabaseInterface, retention time.Duration) {
+	if db == nil {
+		log.Error("Database is not available for cleanup")
+		return
+	}
+
 	cleanupCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
