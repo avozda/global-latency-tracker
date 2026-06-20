@@ -17,5 +17,9 @@ type DatabaseInterface interface {
 }
 
 func OpenDatabase(dsn string) (DatabaseInterface, error) {
-	return OpenPostgreSQL(dsn)
+	db, err := OpenPostgreSQL(dsn)
+	if db == nil {
+		return nil, err
+	}
+	return db, err
 }

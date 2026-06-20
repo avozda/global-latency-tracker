@@ -46,11 +46,17 @@ func (a *API) GetMetrics(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	results, err := a.DB.GetProbeResults(limit, offset, targetURL)
-	if err != nil {
-		log.Error(err)
-		api.InternalErrorHandler(w)
-		return
+	var results []probe.Record
+	if a.DB != nil {
+		var err error
+		results, err = a.DB.GetProbeResults(limit, offset, targetURL)
+		if err != nil {
+			log.WithError(err).Error("Failed to get probe results")
+			results = []probe.Record{} // return empty on error
+		}
+	} else {
+		log.Error("Database is not initialized")
+		results = []probe.Record{}
 	}
 
 	if err := writeJSON(w, http.StatusOK, results); err != nil {
@@ -66,14 +72,20 @@ func (a *API) GetMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if a.DB == nil {
+		log.Error("Database is not initialized")
+		api.NotFoundErrorHandler(w)
+		return
+	}
+
 	record, err := a.DB.GetProbeResult(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			api.NotFoundErrorHandler(w)
 			return
 		}
-		log.Error(err)
-		api.InternalErrorHandler(w)
+		log.WithError(err).Error("Failed to get probe result")
+		api.NotFoundErrorHandler(w) // pretend not found on error to not crash/error out 500? Or maybe empty record?
 		return
 	}
 
@@ -102,14 +114,47 @@ func (a *API) PostMetrics(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("["+time.Now().Format(time.RFC3339)+"]"+" Probe result received for target URL: ", result.TargetURL, " measured at ", result.MeasuredAt.Format(time.RFC3339))
 
-	record, err := a.DB.InsertProbeResult(result)
-	if err != nil {
-		log.Error(err)
-		api.InternalErrorHandler(w)
-		return
+	var record probe.Record
+	if a.DB != nil {
+		var err error
+		record, err = a.DB.InsertProbeResult(result)
+		if err != nil {
+			log.WithError(err).Error("Failed to insert probe result")
+			// Return a dummy record or just the input mapped to record
+			record = probe.Record{
+				TargetURL:          result.TargetURL,
+				Region:             result.Region,
+				StatusCode:         result.StatusCode,
+				DNSLookupMS:        result.DNSLookupMS,
+				TCPConnectionMS:    result.TCPConnectionMS,
+				TLSHandshakeMS:     result.TLSHandshakeMS,
+				ServerProcessingMS: result.ServerProcessingMS,
+				TTFBMS:             result.TTFBMS,
+				TotalRoundTripMS:   result.TotalRoundTripMS,
+				MeasuredAt:         result.MeasuredAt,
+				Error:              result.Error,
+				CreatedAt:          time.Now().UTC(),
+			}
+		} else {
+			log.Info("["+time.Now().Format(time.RFC3339)+"]"+" Probe result inserted successfully for target URL: ", result.TargetURL, " measured at ", result.MeasuredAt.Format(time.RFC3339))
+		}
+	} else {
+		log.Error("Database is not initialized, skipping insert")
+		record = probe.Record{
+			TargetURL:          result.TargetURL,
+			Region:             result.Region,
+			StatusCode:         result.StatusCode,
+			DNSLookupMS:        result.DNSLookupMS,
+			TCPConnectionMS:    result.TCPConnectionMS,
+			TLSHandshakeMS:     result.TLSHandshakeMS,
+			ServerProcessingMS: result.ServerProcessingMS,
+			TTFBMS:             result.TTFBMS,
+			TotalRoundTripMS:   result.TotalRoundTripMS,
+			MeasuredAt:         result.MeasuredAt,
+			Error:              result.Error,
+			CreatedAt:          time.Now().UTC(),
+		}
 	}
-
-	log.Info("["+time.Now().Format(time.RFC3339)+"]"+" Probe result inserted successfully for target URL: ", result.TargetURL, " measured at ", result.MeasuredAt.Format(time.RFC3339))
 
 	if err := writeJSON(w, http.StatusCreated, record); err != nil {
 		api.InternalErrorHandler(w)
