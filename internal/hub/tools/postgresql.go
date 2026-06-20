@@ -29,8 +29,7 @@ func OpenPostgreSQL(dsn string) (*PostgreSQL, error) {
 	defer cancel()
 
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
-		return nil, err
+		return &PostgreSQL{db: db}, err
 	}
 
 	return &PostgreSQL{db: db}, nil
