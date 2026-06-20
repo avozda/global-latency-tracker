@@ -30,15 +30,18 @@ func main() {
 	}
 
 	if err := tools.RunMigrations(dsn); err != nil {
-		log.Fatal(err)
+		log.Errorf("apply migrations: %v", err)
+	} else {
+		log.Info("Database migrations applied")
 	}
-	log.Info("Database migrations applied")
 
 	db, err := tools.OpenDatabase(dsn)
 	if err != nil {
-		log.Fatal(err)
+		log.Errorf("open database: %v", err)
 	}
-	defer db.Close()
+	if db != nil {
+		defer db.Close()
+	}
 
 	retention, cleanupInterval, err := retentionConfig()
 	if err != nil {
