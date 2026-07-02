@@ -43,14 +43,10 @@ func main() {
 		defer db.Close()
 	}
 
-	retention, cleanupInterval, err := retentionConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
-	retentionDone := startProbeResultsRetention(ctx, db, retention, cleanupInterval)
+	// Periodic probe-result retention is intentionally disabled. The cleanup
+	// implementation remains available in retention.go if it is needed again.
 
 	var r chi.Router = chi.NewRouter()
 	handlers.RegisterRoutes(r, db)
@@ -82,7 +78,6 @@ func main() {
 	}
 
 	<-idleClosed
-	<-retentionDone
 	log.Info("Server stopped")
 }
 
